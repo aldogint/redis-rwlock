@@ -1,16 +1,17 @@
 package rwlock
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aldogint/redis-rwlock/pkg/redis"
+
+	redigo "github.com/gomodule/redigo/redis"
 )
 
 type lockerImpl struct {
-	redisPool redis.Pool
+	redisPool *redigo.Pool
 	options   Options
 
 	keyGlobalLock   string
@@ -172,18 +173,17 @@ func (l *lockerImpl) execScript(script *redis.Script, keys []string, args ...int
 
 	keysAndArgs = append(keysAndArgs, args...)
 
-	conn, err := l.redisPool.Get(context.TODO())
-	if err != nil {
-		return false, err
-	}
+	conn := l.redisPool.Get()
 	defer conn.Close()
 
-	status, err := conn.Eval(script, keysAndArgs...)
+	lua := redigo.NewScript(len(keys), script.Src)
+
+	status, err := redigo.Int(lua.Do(conn, keysAndArgs...))
 	if err != nil {
 		return false, err
 	}
 
-	if status == int64(1) {
+	if status == 1 {
 		return true, nil
 	}
 
