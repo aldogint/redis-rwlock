@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aldogint/redis-rwlock/pkg/redis"
 	"github.com/gofrs/uuid"
+	"github.com/gomodule/redigo/redis"
 )
 
 var (
@@ -32,7 +32,7 @@ type Locker interface {
 
 // New instance of RW-Locker.
 // keyLock, keyReadersCount, keyWriterIntent must be unique keys that will be used by locker implementation.
-func New(pool redis.Pool, keyLock, keyReadersCount, keyWriterIntent string, opts Options) Locker {
+func New(pool *redis.Pool, keyLock, keyReadersCount, keyWriterIntent string, opts Options) Locker {
 	prepareOpts(&opts)
 	return &lockerImpl{
 		redisPool:       pool,

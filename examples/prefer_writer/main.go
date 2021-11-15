@@ -6,7 +6,6 @@ import (
 	"time"
 
 	rwlock "github.com/aldogint/redis-rwlock"
-	"github.com/aldogint/redis-rwlock/pkg/redis/redigo"
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -70,11 +69,15 @@ func (e *example) Wait() {
 func main() {
 	var (
 		sharedData = 0
-		redisPool  = redigo.NewPool(&redis.Pool{
+		redisPool  = &redis.Pool{
 			Dial: func() (redis.Conn, error) {
-				return redis.Dial("tcp", "localhost:6379")
+				rc, err := redis.Dial("tcp", ":6379")
+				if err != nil {
+					return nil, err
+				}
+				return rc, nil
 			},
-		})
+		}
 		example = example{
 			locker: rwlock.New(redisPool, "GLOBAL_LOCK", "READER_COUNT", "WRITER_INTENT", &rwlock.Options{}),
 			doneC:  make(chan struct{}),
